@@ -9,3 +9,12 @@ Thumbs.db
 .commit
 .devbox
 .envrc
+
+
+### Rust template
+debug/
+target/
+**/*.rs.bk
+*.pdb
+logs
+data
