@@ -16,6 +16,11 @@ cruft-update:
 ifeq (,$(wildcard .cruft.json))
 	@echo "Cruft not configured"
 else
-	@cruft check || cruft update --skip-apply-ask --refresh-private-variables
+	@pkgx cruft check || pkgx cruft update --skip-apply-ask --refresh-private-variables
 endif
-.PHONY: cruft-update
+
+dev:
+	# Starts Overmind to mintor Procfile ..
+	@pkgx overmind s
+
+.PHONY: cruft-update dev

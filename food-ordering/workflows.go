@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 )
 
@@ -96,6 +97,9 @@ func OrderWorkflow(ctx workflow.Context, state OrderState) error {
 
 	ctx = workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
 		StartToCloseTimeout: time.Minute,
+		RetryPolicy: &temporal.RetryPolicy{
+			MaximumInterval: time.Second * 10,
+		},
 	})
 
 	if err := workflow.ExecuteActivity(ctx, a.TakePayment).Get(ctx, nil); err != nil {
