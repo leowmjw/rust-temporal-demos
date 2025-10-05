@@ -33,6 +33,26 @@ A food ordering system that demonstrates:
 - Automatic refunds for rejected orders
 - SMS notifications at each stage
 
+### 3. IP Location (`iplocate-rust/`)
+
+A simple IP geolocation workflow that demonstrates:
+- **Basic Activities**: External API calls (IP lookup, geolocation)
+- **Activity Options**: Timeout configuration and retry policies
+- **Error Handling**: Retryable vs NonRetryable errors
+- **Mock Testing**: Controlled failure scenarios without servers
+- **Golden Snapshot Testing**: Realistic test data from fixtures
+
+**Key Features:**
+- Fetch public IP address from icanhazip.com
+- Retrieve geolocation data from ip-api.com
+- Optional timer/sleep between activities
+- Comprehensive test suite with 17 tests covering:
+  - Real HTTP API calls
+  - Network failure simulations (no WiFi, flaky network, high latency)
+  - Golden snapshot data for deterministic testing
+  - Exponential backoff calculations
+  - Activity timeout scenarios
+
 ## Prerequisites
 
 - Rust 1.70+
@@ -79,13 +99,30 @@ Then use the Temporal Web UI (http://localhost:8080) to:
 - Query order status
 - Update order status (ACCEPTED, PREPARING, READY, COMPLETED, REJECTED)
 
+### 4. Run IP Location Demo
+
+```bash
+# Terminal 1: Start the worker
+cd iplocate-rust
+cargo run --bin worker
+
+# Terminal 2: Trigger the workflow
+cargo run --bin starter
+```
+
+**What it demonstrates:**
+- Simple two-activity workflow (get IP → get location)
+- Real HTTP calls to external APIs
+- Workflow completes and returns structured output
+- Check Temporal Web UI (http://localhost:8233) to see workflow execution history
+
 ## Environment Variables
 
 - `TEMPORAL_ADDRESS`: Temporal server address (default: `localhost:7233`)
 
 ## Testing
 
-Both demos include comprehensive tests that use Temporal's test environment with ephemeral servers:
+All demos include comprehensive tests that use Temporal's test environment with ephemeral servers:
 
 ```bash
 # Test schedule payments
@@ -95,7 +132,31 @@ cargo test
 # Test food ordering
 cd food-ordering-rust
 cargo test
+
+# Test IP location (includes 17 tests)
+cd iplocate-rust
+cargo test
+
+# Run specific test suites
+cargo test --test integration_tests        # Basic integration tests (8 tests)
+cargo test --test advanced_integration_tests  # Advanced mock tests (9 tests)
 ```
+
+### IP Location Test Features
+
+The IP location demo showcases advanced testing patterns:
+
+**Integration Tests (`tests/integration_tests.rs`):**
+- Real HTTP API calls to icanhazip.com and ip-api.com
+- Type serialization/deserialization validation
+- API response structure verification
+
+**Advanced Tests (`tests/advanced_integration_tests.rs`):**
+- **Network failure simulations**: No WiFi (NonRetryable), flaky network (Retryable), high latency
+- **Golden snapshot data**: Deterministic testing with `tests/fixtures/golden_ips.json`
+- **Activity options**: Timeout configurations, exponential backoff calculations
+- **Error type preservation**: Retryable vs NonRetryable error handling
+- **Mock activities**: Test activity logic without running Temporal server
 
 ## Architecture
 
@@ -151,6 +212,21 @@ The implementations follow Temporal's idiomatic patterns:
 │   │       └── starter.rs
 │   ├── Cargo.toml
 │   └── README.md
+├── iplocate-rust/
+│   ├── src/
+│   │   ├── lib.rs
+│   │   ├── activities.rs
+│   │   ├── types.rs
+│   │   ├── workflows.rs
+│   │   └── bin/
+│   │       ├── worker.rs
+│   │       └── starter.rs
+│   ├── tests/
+│   │   ├── integration_tests.rs
+│   │   ├── advanced_integration_tests.rs
+│   │   └── fixtures/
+│   │       └── golden_ips.json
+│   └── Cargo.toml
 └── README-RUST.md
 ```
 
