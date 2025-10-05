@@ -8,6 +8,7 @@ use temporal_sdk_core_api::{
     worker::{WorkerConfigBuilder, WorkerVersioningStrategy},
     telemetry::TelemetryOptionsBuilder
 };
+use temporal_sdk_core_protos::coresdk::FromJsonPayloadExt;
 use tracing::{error, info};
 
 #[tokio::main]
@@ -18,8 +19,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Get Temporal server address from environment
     let temporal_address = env::var("TEMPORAL_ADDRESS").unwrap_or_else(|_| "http://localhost:7233".to_string());
 
+    // Get worker identity from environment or use default
+    let worker_identity = env::var("WORKER_IDENTITY").unwrap_or_else(|_| "iplocate-rust-worker".to_string());
+
     // Create client options
-    let server_options = sdk_client_options(Url::from_str(&temporal_address)?).build()?;
+    let server_options = sdk_client_options(Url::from_str(&temporal_address)?)
+        .identity(worker_identity)
+        .build()?;
     let client = server_options.connect("default", None).await?;
 
     // Create telemetry options and runtime
@@ -44,16 +50,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Register workflow with a closure that deserializes input
     worker.register_wf("get_address_from_ip", |ctx: temporal_sdk::WfContext| async move {
         // Extract input from context
-        let input: iplocate_rust::WorkflowInput = serde_json::from_slice(
-            &ctx.get_args().first().expect("Missing input").data
+        let input = iplocate_rust::WorkflowInput::from_json_payload(
+            ctx.get_args().first().expect("Missing input")
         ).expect("Failed to deserialize input");
 
         get_address_from_ip(ctx, input).await
     });
 
     // Register activities
-    worker.register_activity("get_ip", |ctx, _: ()| get_ip(ctx));
-    worker.register_activity("get_location_info", |ctx, ip: String| get_location_info(ctx, ip));
+    worker.register_activity("get_ip", |ctx: temporal_sdk::ActContext, _: ()| async move {
+        get_ip(ctx).await
+    });
+    worker.register_activity("get_location_info", |ctx: temporal_sdk::ActContext, ip: String| async move {
+        get_location_info(ctx, ip).await
+    });
 
     info!("Starting worker for task queue: {}", TASK_QUEUE_NAME);
 

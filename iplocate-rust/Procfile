@@ -1,0 +1,6 @@
+temporal: ~/go/bin/temporal server start-dev --port 7233 --ui-port 8233 --metrics-port 57271
+# api: pkgx air .
+worker: make worker
+kickoff: make kickoff
+# web: cd food-ordering/web && npm run dev
+
