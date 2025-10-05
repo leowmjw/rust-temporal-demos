@@ -1,96 +1,97 @@
-# Makefile for Rust Temporal Demos
-# Copyright 2025 Simon Emms <simon@simonemms.com>
+# Rust Temporal Demos Makefile
 
-.PHONY: help build test clean run-schedule-payments run-food-ordering run-workers
+.PHONY: help install test clean schedule-payments food-ordering temporal-server
 
 # Default target
 help:
+	@echo "Rust Temporal Demos"
+	@echo "=================="
+	@echo ""
 	@echo "Available targets:"
-	@echo "  build                 - Build all projects"
-	@echo "  test                  - Run all tests"
-	@echo "  clean                 - Clean build artifacts"
-	@echo "  run-schedule-payments - Run schedule-payments worker and starter"
-	@echo "  run-food-ordering     - Run food-ordering worker and starter"
-	@echo "  run-workers           - Run both workers in background"
-	@echo "  stop-workers          - Stop all running workers"
+	@echo "  install          - Install Rust dependencies"
+	@echo "  test             - Run all tests"
+	@echo "  clean            - Clean build artifacts"
+	@echo "  temporal-server  - Start Temporal server (requires temporal CLI)"
+	@echo "  schedule-payments - Run schedule payments demo"
+	@echo "  food-ordering    - Run food ordering demo"
+	@echo ""
+	@echo "Schedule Payments:"
+	@echo "  schedule-payments-worker   - Start schedule payments worker"
+	@echo "  schedule-payments-schedule - Create schedule payments schedule"
+	@echo "  schedule-payments-starter  - Trigger schedule payments workflow"
+	@echo ""
+	@echo "Food Ordering:"
+	@echo "  food-ordering-worker  - Start food ordering worker"
+	@echo "  food-ordering-starter - Start food ordering workflow"
 
-# Build all projects
-build:
-	@echo "Building schedule-payments-rust..."
+# Install dependencies
+install:
+	@echo "Installing Rust dependencies..."
 	cd schedule-payments-rust && cargo build
-	@echo "Building food-ordering-rust..."
 	cd food-ordering-rust && cargo build
 
 # Run all tests
 test:
-	@echo "Testing schedule-payments-rust..."
+	@echo "Running schedule payments tests..."
 	cd schedule-payments-rust && cargo test
-	@echo "Testing food-ordering-rust..."
+	@echo "Running food ordering tests..."
 	cd food-ordering-rust && cargo test
 
 # Clean build artifacts
 clean:
-	@echo "Cleaning schedule-payments-rust..."
+	@echo "Cleaning build artifacts..."
 	cd schedule-payments-rust && cargo clean
-	@echo "Cleaning food-ordering-rust..."
 	cd food-ordering-rust && cargo clean
 
-# Run schedule-payments worker and starter
-run-schedule-payments: build
-	@echo "Starting schedule-payments worker..."
-	cd schedule-payments-rust && cargo run --bin worker &
-	@echo "Waiting for worker to start..."
-	sleep 3
-	@echo "Starting schedule-payments workflow..."
+# Start Temporal server
+temporal-server:
+	@echo "Starting Temporal server..."
+	@echo "Make sure you have the Temporal CLI installed: https://docs.temporal.io/cli"
+	temporal server start-dev
+
+# Schedule Payments Demo
+schedule-payments: schedule-payments-worker schedule-payments-schedule schedule-payments-starter
+
+schedule-payments-worker:
+	@echo "Starting schedule payments worker..."
+	cd schedule-payments-rust && cargo run --bin worker
+
+schedule-payments-schedule:
+	@echo "Creating schedule payments schedule..."
+	cd schedule-payments-rust && cargo run --bin schedule
+
+schedule-payments-starter:
+	@echo "Triggering schedule payments workflow..."
 	cd schedule-payments-rust && cargo run --bin starter
 
-# Run food-ordering worker and starter
-run-food-ordering: build
-	@echo "Starting food-ordering worker..."
-	cd food-ordering-rust && cargo run --bin worker &
-	@echo "Waiting for worker to start..."
-	sleep 3
-	@echo "Starting food-ordering workflow..."
+# Food Ordering Demo
+food-ordering: food-ordering-worker food-ordering-starter
+
+food-ordering-worker:
+	@echo "Starting food ordering worker..."
+	cd food-ordering-rust && cargo run --bin worker
+
+food-ordering-starter:
+	@echo "Starting food ordering workflow..."
 	cd food-ordering-rust && cargo run --bin starter
 
-# Run both workers in background
-run-workers: build
-	@echo "Starting schedule-payments worker..."
-	cd schedule-payments-rust && cargo run --bin worker &
-	@echo "Starting food-ordering worker..."
-	cd food-ordering-rust && cargo run --bin worker &
-	@echo "Both workers started. Use 'make stop-workers' to stop them."
-
-# Stop all running workers
-stop-workers:
-	@echo "Stopping all workers..."
-	pkill -f "cargo run --bin worker" || true
-	@echo "Workers stopped."
-
-# Run tests with verbose output
-test-verbose:
-	@echo "Testing schedule-payments-rust (verbose)..."
-	cd schedule-payments-rust && cargo test -- --nocapture
-	@echo "Testing food-ordering-rust (verbose)..."
-	cd food-ordering-rust && cargo test -- --nocapture
-
-# Check code without building
-check:
-	@echo "Checking schedule-payments-rust..."
-	cd schedule-payments-rust && cargo check
-	@echo "Checking food-ordering-rust..."
-	cd food-ordering-rust && cargo check
+# Development helpers
+dev-setup:
+	@echo "Setting up development environment..."
+	@echo "1. Install Rust: https://rustup.rs/"
+	@echo "2. Install Temporal CLI: https://docs.temporal.io/cli"
+	@echo "3. Run 'make temporal-server' to start Temporal"
+	@echo "4. Run 'make install' to build dependencies"
+	@echo "5. Run 'make test' to verify everything works"
 
 # Format code
 fmt:
-	@echo "Formatting schedule-payments-rust..."
+	@echo "Formatting code..."
 	cd schedule-payments-rust && cargo fmt
-	@echo "Formatting food-ordering-rust..."
 	cd food-ordering-rust && cargo fmt
 
-# Run clippy linter
-clippy:
-	@echo "Running clippy on schedule-payments-rust..."
+# Lint code
+lint:
+	@echo "Linting code..."
 	cd schedule-payments-rust && cargo clippy
-	@echo "Running clippy on food-ordering-rust..."
 	cd food-ordering-rust && cargo clippy

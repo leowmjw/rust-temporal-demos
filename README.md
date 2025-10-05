@@ -1,278 +1,263 @@
 # Rust Temporal Demos
 
-This repository contains Rust implementations of two Temporal workflow applications, ported from Go to demonstrate the Temporal Rust SDK capabilities.
+This repository contains Rust implementations of Temporal demos, ported from the original Go implementations. The demos showcase Temporal's core features using the Rust SDK.
 
-## Projects
+## Demos
 
 ### 1. Schedule Payments (`schedule-payments-rust/`)
-A payment scheduling system that finds payments due on a given day and processes them in parallel using child workflows.
 
-**Features:**
-- Finds payments due today based on schedule (daily, weekly, monthly)
-- Processes payments in parallel using child workflows
-- Simulates payment processing with realistic delays
-- Supports scheduled execution via Temporal schedules
+A payment scheduling system that demonstrates:
+- **Scheduled Workflows**: Automated daily payment processing
+- **Child Workflows**: Parallel payment processing
+- **Activities**: Database queries and payment processing
+- **Temporal Schedules**: Recurring workflow execution
 
-**Workflows:**
-- `find_due_payments_workflow`: Main workflow that finds and processes due payments
-- `make_payment`: Child workflow that processes individual payments
-
-**Activities:**
-- `find_payments_for_day`: Simulates database query for due payments
-- `send_payment`: Simulates payment processing
+**Key Features:**
+- Daily, weekly, and monthly payment schedules
+- Parallel payment processing using child workflows
+- Simulated database queries and payment processing
+- Configurable schedule intervals
 
 ### 2. Food Ordering (`food-ordering-rust/`)
-A food ordering system that manages the complete order lifecycle from payment to completion.
 
-**Features:**
-- Handles payment processing
-- Sends notifications at each stage
-- Manages order status updates
-- Simulates restaurant order processing
+A food ordering system that demonstrates:
+- **Workflow Updates**: Restaurant status updates
+- **Workflow Queries**: Customer order status queries
+- **Update Validators**: Status validation
+- **Conditional Waiting**: Waiting for specific conditions
 
-**Workflows:**
-- `order_workflow`: Main workflow that manages the order lifecycle
+**Key Features:**
+- Complete order lifecycle management
+- Real-time status updates from restaurants
+- Customer order status queries
+- Automatic refunds for rejected orders
+- SMS notifications at each stage
 
-**Activities:**
-- `take_payment`: Processes customer payment
-- `send_text_message`: Sends status notifications
-- `refund_payment`: Handles payment refunds
+### 3. IP Location (`iplocate-rust/`)
+
+A simple IP geolocation workflow that demonstrates:
+- **Basic Activities**: External API calls (IP lookup, geolocation)
+- **Activity Options**: Timeout configuration and retry policies
+- **Error Handling**: Retryable vs NonRetryable errors
+- **Mock Testing**: Controlled failure scenarios without servers
+- **Golden Snapshot Testing**: Realistic test data from fixtures
+
+**Key Features:**
+- Fetch public IP address from icanhazip.com
+- Retrieve geolocation data from ip-api.com
+- Optional timer/sleep between activities
+- Comprehensive test suite with 17 tests covering:
+  - Real HTTP API calls
+  - Network failure simulations (no WiFi, flaky network, high latency)
+  - Golden snapshot data for deterministic testing
+  - Exponential backoff calculations
+  - Activity timeout scenarios
 
 ## Prerequisites
 
-- Rust 1.90.0 or later
-- Cargo
-- Make (optional, for using Makefiles)
+- Rust 1.70+
+- Temporal server running locally
 
 ## Quick Start
 
-### 1. Clone the Repository
+### 1. Start Temporal Server
+
+For local development, use the ephemeral server:
 
 ```bash
-git clone <repository-url>
-cd rust-tdemo
+temporal server start-dev
 ```
 
-### 2. Build All Projects
+This starts a self-contained Temporal server suitable for development and testing.
+
+### 2. Run Schedule Payments Demo
 
 ```bash
-make build
-```
-
-### 3. Run Tests
-
-```bash
-make test
-```
-
-### 4. Run Applications
-
-#### Schedule Payments
-```bash
-# Run worker and starter together
-make run-schedule-payments
-
-# Or run individually
+# Terminal 1: Start the worker
 cd schedule-payments-rust
-make run-worker    # In one terminal
-make run-starter   # In another terminal
+cargo run --bin worker
+
+# Terminal 2: Create the schedule (runs every minute for demo purposes)
+cargo run --bin schedule
+
+# Terminal 3: Trigger a manual run
+cargo run --bin starter
 ```
 
-#### Food Ordering
-```bash
-# Run worker and starter together
-make run-food-ordering
+### 3. Run Food Ordering Demo
 
-# Or run individually
+```bash
+# Terminal 1: Start the worker
 cd food-ordering-rust
-make run-worker    # In one terminal
-make run-starter   # In another terminal
+cargo run --bin worker
+
+# Terminal 2: Start an order
+cargo run --bin starter
 ```
 
-## Project Structure
+Then use the Temporal Web UI (http://localhost:8080) to:
+- Query order status
+- Update order status (ACCEPTED, PREPARING, READY, COMPLETED, REJECTED)
 
-```
-rust-tdemo/
-├── schedule-payments-rust/          # Payment scheduling application
-│   ├── src/
-│   │   ├── activities.rs            # Activity implementations
-│   │   ├── data.rs                  # Data structures and generation
-│   │   ├── workflows.rs             # Workflow implementations
-│   │   ├── lib.rs                   # Library entry point
-│   │   └── bin/                     # Binary executables
-│   │       ├── worker.rs            # Temporal worker
-│   │       ├── starter.rs           # Workflow starter
-│   │       └── schedule.rs          # Schedule creator
-│   ├── tests/
-│   │   └── integration_tests.rs     # Integration tests
-│   ├── Cargo.toml                   # Project dependencies
-│   └── Makefile                     # Build automation
-├── food-ordering-rust/              # Food ordering application
-│   ├── src/
-│   │   ├── activities.rs            # Activity implementations
-│   │   ├── constants.rs             # Application constants
-│   │   ├── types.rs                 # Data type definitions
-│   │   ├── workflows.rs             # Workflow implementations
-│   │   ├── lib.rs                   # Library entry point
-│   │   └── bin/                     # Binary executables
-│   │       ├── worker.rs            # Temporal worker
-│   │       └── starter.rs           # Workflow starter
-│   ├── tests/
-│   │   └── integration_tests.rs     # Integration tests
-│   ├── Cargo.toml                   # Project dependencies
-│   └── Makefile                     # Build automation
-├── sdk-core/                        # Temporal Rust SDK (cloned)
-└── Makefile                         # Root build automation
-```
-
-## Architecture
-
-### Temporal Patterns Used
-
-1. **Workflows**: Deterministic business logic that orchestrates activities
-2. **Activities**: Non-deterministic operations that interact with external systems
-3. **Child Workflows**: Parallel execution of related workflows
-4. **Timers**: Workflow delays and scheduling
-5. **Updates**: Dynamic workflow state modification (food-ordering)
-6. **Schedules**: Automated workflow triggers (schedule-payments)
-
-### Rust-Specific Adaptations
-
-1. **Error Handling**: Uses Rust's `Result` types with Temporal's error types
-2. **Async/Await**: Leverages Rust's async runtime for workflow execution
-3. **Ownership**: Proper memory management with Rust's ownership system
-4. **Type Safety**: Strong typing with `serde` for serialization
-5. **Testing**: Comprehensive test suites using ephemeral Temporal servers
-
-## Development
-
-### Running Tests
-
-Each project includes comprehensive integration tests that use Temporal's ephemeral server:
+### 4. Run IP Location Demo
 
 ```bash
-# Run all tests
-make test
+# Terminal 1: Start the worker
+cd iplocate-rust
+cargo run --bin worker
 
-# Run tests with verbose output
-make test-verbose
-
-# Run tests for specific project
-cd schedule-payments-rust && cargo test
-cd food-ordering-rust && cargo test
+# Terminal 2: Trigger the workflow
+cargo run --bin starter
 ```
 
-### Code Quality
+**What it demonstrates:**
+- Simple two-activity workflow (get IP → get location)
+- Real HTTP calls to external APIs
+- Workflow completes and returns structured output
+- Check Temporal Web UI (http://localhost:8233) to see workflow execution history
 
-```bash
-# Check code without building
-make check
+## Environment Variables
 
-# Format code
-make fmt
-
-# Run linter
-make clippy
-```
-
-### Individual Project Commands
-
-#### Schedule Payments
-```bash
-cd schedule-payments-rust
-
-# Build
-make build
-
-# Run worker
-make run-worker
-
-# Trigger workflow
-make run-starter
-
-# Create schedule
-make run-schedule
-
-# Run all together
-make run-all
-```
-
-#### Food Ordering
-```bash
-cd food-ordering-rust
-
-# Build
-make build
-
-# Run worker
-make run-worker
-
-# Trigger workflow
-make run-starter
-
-# Run all together
-make run-all
-```
-
-## Configuration
-
-### Environment Variables
-
-- `TEMPORAL_ADDRESS`: Temporal server address (default: `http://localhost:7233`)
-
-### Task Queues
-
-- Schedule Payments: `payments`
-- Food Ordering: `order_food`
+- `TEMPORAL_ADDRESS`: Temporal server address (default: `localhost:7233`)
 
 ## Testing
 
-The test suites use Temporal's ephemeral server for isolated testing:
-
-- **Unit Tests**: Test individual activities and workflows
-- **Integration Tests**: Test complete workflow execution
-- **End-to-End Tests**: Test full application workflows
-- **Worker Tests**: Test worker registration and execution
-
-## Key Differences from Go Implementation
-
-1. **Activity Functions**: Standalone functions instead of struct methods
-2. **Error Handling**: Rust's `Result` types instead of Go's error interface
-3. **Serialization**: `serde` instead of Go's JSON marshaling
-4. **Async Runtime**: Tokio instead of Go's goroutines
-5. **Type Safety**: Compile-time type checking with Rust's type system
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Build Errors**: Ensure you have Rust 1.90.0+ and all dependencies
-2. **Connection Issues**: Check that Temporal server is running
-3. **Worker Issues**: Ensure only one worker per task queue is running
-4. **Test Failures**: Run tests individually to isolate issues
-
-### Debug Mode
-
-Run with debug logging:
+All demos include comprehensive tests that use Temporal's test environment with ephemeral servers:
 
 ```bash
-RUST_LOG=debug cargo run --bin worker
-RUST_LOG=debug cargo run --bin starter
+# Test schedule payments
+cd schedule-payments-rust
+cargo test
+
+# Test food ordering
+cd food-ordering-rust
+cargo test
+
+# Test IP location (includes 17 tests)
+cd iplocate-rust
+cargo test
+
+# Run specific test suites
+cargo test --test integration_tests        # Basic integration tests (8 tests)
+cargo test --test advanced_integration_tests  # Advanced mock tests (9 tests)
 ```
+
+### IP Location Test Features
+
+The IP location demo showcases advanced testing patterns:
+
+**Integration Tests (`tests/integration_tests.rs`):**
+- Real HTTP API calls to icanhazip.com and ip-api.com
+- Type serialization/deserialization validation
+- API response structure verification
+
+**Advanced Tests (`tests/advanced_integration_tests.rs`):**
+- **Network failure simulations**: No WiFi (NonRetryable), flaky network (Retryable), high latency
+- **Golden snapshot data**: Deterministic testing with `tests/fixtures/golden_ips.json`
+- **Activity options**: Timeout configurations, exponential backoff calculations
+- **Error type preservation**: Retryable vs NonRetryable error handling
+- **Mock activities**: Test activity logic without running Temporal server
+
+## Architecture
+
+### Temporal Rust SDK Patterns
+
+The implementations follow Temporal's idiomatic patterns:
+
+1. **Workflows**: Deterministic functions that orchestrate business logic
+2. **Activities**: Non-deterministic functions for external operations
+3. **Queries**: Read-only access to workflow state
+4. **Updates**: Modifications to workflow state with validation
+5. **Child Workflows**: Parallel execution of related workflows
+6. **Schedules**: Automated workflow triggers
+
+### Key Dependencies
+
+- `temporal-sdk-core`: Core Temporal SDK for Rust
+- `tokio`: Async runtime
+- `serde`: Serialization/deserialization
+- `chrono`: Date/time handling
+- `uuid`: Unique identifiers
+- `tracing`: Structured logging
+- `anyhow`: Error handling
+
+## Development
+
+### Project Structure
+
+```
+├── schedule-payments-rust/
+│   ├── src/
+│   │   ├── lib.rs
+│   │   ├── activities.rs
+│   │   ├── data.rs
+│   │   ├── workflows.rs
+│   │   ├── tests.rs
+│   │   └── bin/
+│   │       ├── worker.rs
+│   │       ├── starter.rs
+│   │       └── schedule.rs
+│   ├── Cargo.toml
+│   └── README.md
+├── food-ordering-rust/
+│   ├── src/
+│   │   ├── lib.rs
+│   │   ├── activities.rs
+│   │   ├── constants.rs
+│   │   ├── types.rs
+│   │   ├── workflows.rs
+│   │   ├── tests.rs
+│   │   └── bin/
+│   │       ├── worker.rs
+│   │       └── starter.rs
+│   ├── Cargo.toml
+│   └── README.md
+├── iplocate-rust/
+│   ├── src/
+│   │   ├── lib.rs
+│   │   ├── activities.rs
+│   │   ├── types.rs
+│   │   ├── workflows.rs
+│   │   └── bin/
+│   │       ├── worker.rs
+│   │       └── starter.rs
+│   ├── tests/
+│   │   ├── integration_tests.rs
+│   │   ├── advanced_integration_tests.rs
+│   │   └── fixtures/
+│   │       └── golden_ips.json
+│   └── Cargo.toml
+└── README-RUST.md
+```
+
+### Adding New Demos
+
+To add a new demo:
+
+1. Create a new directory with `Cargo.toml`
+2. Implement workflows, activities, and types
+3. Add worker and starter binaries
+4. Include comprehensive tests
+5. Add documentation
+
+## Comparison with Go Implementation
+
+The Rust implementations maintain feature parity with the original Go versions while leveraging Rust's strengths:
+
+- **Type Safety**: Compile-time guarantees for data structures
+- **Memory Safety**: No runtime memory errors
+- **Performance**: Zero-cost abstractions and efficient async runtime
+- **Error Handling**: Explicit error handling with `Result<T, E>`
+- **Concurrency**: Safe concurrent programming with async/await
 
 ## Contributing
 
-1. Follow Rust coding standards
-2. Add tests for new functionality
-3. Update documentation as needed
-4. Use conventional commit messages
+1. Follow Rust naming conventions
+2. Use `cargo fmt` for formatting
+3. Use `cargo clippy` for linting
+4. Write comprehensive tests
+5. Update documentation
 
 ## License
 
-Licensed under the Apache License, Version 2.0. See LICENSE file for details.
-
-## Acknowledgments
-
-- Ported from Go Temporal SDK examples
-- Uses Temporal Rust SDK (alpha)
-- Inspired by Temporal's best practices and patterns
+Licensed under the Apache License, Version 2.0. See the original Go implementations for the complete license text.
