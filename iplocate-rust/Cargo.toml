@@ -1,0 +1,24 @@
+[package]
+name = "iplocate-rust"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+temporal-sdk = { path = "../sdk-core/sdk" }
+temporal-sdk-core = { path = "../sdk-core/core", features = ["ephemeral-server"] }
+temporal-sdk-core-api = { path = "../sdk-core/core-api" }
+temporal-client = { path = "../sdk-core/client" }
+temporal-sdk-core-protos = { path = "../sdk-core/sdk-core-protos" }
+url = "2.5"
+tokio = { version = "1.42", features = ["full"] }
+serde = { version = "1.0.215", features = ["derive"] }
+serde_json = "1.0.133"
+uuid = { version = "1.11", features = ["v4", "serde"] }
+reqwest = { version = "0.12", features = ["json"] }
+tracing = "0.1.41"
+tracing-subscriber = "0.3.19"
+anyhow = "1.0.95"
+thiserror = "1.0.69"
+
+[dev-dependencies]
+tokio-test = "0.4.4"
