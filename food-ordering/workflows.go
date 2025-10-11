@@ -96,9 +96,11 @@ func OrderWorkflow(ctx workflow.Context, state OrderState) error {
 	}
 
 	ctx = workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
-		StartToCloseTimeout: time.Minute,
+		StartToCloseTimeout: time.Second * 10,
 		RetryPolicy: &temporal.RetryPolicy{
-			MaximumInterval: time.Second * 10,
+			InitialInterval:    time.Second * 1,
+			BackoffCoefficient: 2,
+			MaximumInterval:    time.Second * 5,
 		},
 	})
 
