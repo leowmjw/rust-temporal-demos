@@ -1,6 +1,6 @@
 # Rust Temporal Demos Makefile
 
-.PHONY: help install test clean schedule-payments food-ordering temporal-server
+.PHONY: help install test clean schedule-payments food-ordering temporal-server demo
 
 # Default target
 help:
@@ -95,3 +95,13 @@ lint:
 	@echo "Linting code..."
 	cd schedule-payments-rust && cargo clippy
 	cd food-ordering-rust && cargo clippy
+
+demo:
+	@echo "Starting Temporal + Food App"
+	@pkgx overmind s
+
+disrupt:
+	pkgx overmind stop worker
+
+continue:
+	pkgx overmind r worker
